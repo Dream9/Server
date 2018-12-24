@@ -14,6 +14,7 @@
 //} rio_t;
 
 //文件描述符与rio缓冲区关联
+/*这里应该叫做rio_readinit更合适*/
 void rio_init(rio_t*rp,int fd){
     rp->rio_fd=fd;
     rp->rio_cnt=0;
@@ -24,9 +25,9 @@ static ssize_t rio_read(rio_t*rp,void *usrbuf,size_t n){
     int cnt;
     while(rp->rio_cnt<=0){
         //装填缓冲区
-        rp->rio_cnt=read(rp->rio_fd,rp_rio_buf,sizeof(rp_>rio_buf));
+        rp->rio_cnt=read(rp->rio_fd,rp->rio_buf,sizeof(rp->rio_buf));
         if(rp->rio_cnt<0){
-            if(errnoo!=EINTR) /*Interrupted by sig handler return*/
+            if(errno!=EINTR) /*Interrupted by sig handler return*/
                 return -1;
             //其他情况下，重现陷入内核read
         }
@@ -36,7 +37,7 @@ static ssize_t rio_read(rio_t*rp,void *usrbuf,size_t n){
             rp->rio_bufptr=rp->rio_buf;
     }
     cnt=rp->rio_cnt<n?rp->rio_cnt:n;
-    memcpy(usrbuf,rp_rio_bufptr,cnt);
+    memcpy(usrbuf,rp->rio_bufptr,cnt);
     rp->rio_cnt-=cnt;
     rp->rio_bufptr+=cnt;
     return cnt;
@@ -62,7 +63,7 @@ ssize_t rio_readlineb(rio_t*rp,void *usrbuf,size_t maxlen){
     int n,rc;
     char c,*bufp=usrbuf;
     for(n=1;n<maxlen;n++){
-        if(rc=rio_read(rp,&c,1)==1)
+        if((rc=rio_read(rp,&c,1))==1)
         {
             *bufp++=c;
             if(c=='\n'){
@@ -88,7 +89,7 @@ ssize_t rio_writen(int fd ,void*usrbuf,size_t n){
     char *bufp=usrbuf;
 
     while(nleft>0){
-        if(nwritten=write(fd,bufp,nleft)<=0){
+        if((nwritten=write(fd,bufp,nleft))<=0){
             if(errno==EINTR)
                 nwritten=0;
             else 

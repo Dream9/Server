@@ -74,15 +74,15 @@
 //ssize_t getfdline(size_t fd,char*buf,size_t sz);
 
 //返回400请求解析失败，客户端代码错误
-extern inline void response_400(int cfd);
+extern void response_400(int cfd);
 //返回404请求文件未找到错误
-extern inline void response_404(int cfd);
+extern void response_404(int cfd);
 //返回501服务器不支持的请求
-extern inline void response_501(int cfd);
+extern void response_501(int cfd);
 //返回500服务器内部错误
-extern inline void response_500(int cfd);
+extern  void response_500(int cfd);
 //返回200请求成功
-extern inline void response_200(int cfd);
+extern void response_200(int cfd);
 
 
 //发送文件到客户端

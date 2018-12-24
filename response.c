@@ -92,6 +92,10 @@ void *response_echo(void*arg){
     char *ptr_t,*ptr_bb,*query,*ptr_b=buf;
     int notcgi;//用于记录请求类型，是否是cgi
 
+    //将文件描述符绑定到rio_t上面
+    rio_t rio_buf;
+    rio_init(&rio_buf,cfd);
+
     if(rioreadnb(fd,buf,sizeof buf)<=0){
         //请求错误
         response_501(cfd);
@@ -143,7 +147,7 @@ void *response_echo(void*arg){
     }
     //type,path,query都已经构建好了
     if((stat(path,&st)<0)){
-        while(rio_readnb(cfd,buf,sizeof buf)>0 &&strcmp("\n",buf))
+        while(rio_readnb(rio_buf,buf,sizeof buf)>0 &&strcmp("\n",buf))
             ;//读取内容知道结束
         response_404(cfd);
         close(cfd);
@@ -183,7 +187,7 @@ void response_cgi(int cfd,const char*path,const char*type,
      */
  
     if(strcasecmp(type,"POST")==0){
-        while(rio_readnb(cfd,buf,sizeof buf)>0&&
+        while(rio_readnb(rio_buf,buf,sizeof buf)>0&&
                 strcmp("\n",buf)){
             buf[15]='\0';
             if(!strcase)
@@ -194,7 +198,7 @@ void response_cgi(int cfd,const char*path,const char*type,
         }
         else{
             //读取content，其实是与cgi执行无关的信息
-            while(rio_readnb(cfd,buf,sizeof buf)>0 && strcmp("/n",buf))
+            while(rio_readnb(rio_buf,buf,sizeof buf)>0 && strcmp("/n",buf))
                 ;
         }
     }
@@ -242,12 +246,12 @@ void response_cgi(int cfd,const char*path,const char*type,
     if(strcasecmp(type,"POST")==0){
         int i;//将数据写入到picgi管道中,让子进程在picgi[0]中读取
         for(int i=0;i<conlen;++i){
-            rio_readnb(cfd,&c,1);
-            write(picgi[1],&c,1);
+            rio_readnb(rio_buf,&c,1);
+            rio_writen(picgi[1],&c,1);
         }
     }
-    while(rio_readnb(pocgi[0],&c,1)>0)
-        rio_write(cfd,&c,1);
+    while(read(pocgi[0],&c,1)>0)
+        rio_writen(cfd,&c,1);
     close(pocgi[0]);
     close(picgi[1]);
     //等待子进程结束
