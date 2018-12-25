@@ -1,5 +1,5 @@
 #include"csapp.h"
-
+#include"macro.h"
 //getaddrinfo-->sock-->bind--->listen---->accept--->ok
 //
 #define INT_LIS 1024
@@ -11,7 +11,13 @@ int open_listenfd(char*port){
     hints.ai_socktype=SOCK_STREAM;
     hints.ai_flags=AI_PASSIVE|AI_ADDRCONFIG;
     hints.ai_flags|=AI_NUMERICSERV;
-    IF_CODE(getaddrinfo(NULL,port,&hints,&listp));
+    //////////////////////////////////
+    if(int err_num=getaddrinfo(NULL,port,&hints,&listp)!=0){
+        //失败后，返回非零值，代表错误代码
+        fprintf(stderr,"Something Brokendown[%s:%d:%s][%d:]\r\n",
+                __FILE__,__LINE__,__func__,err_num);
+        exit(EXIT_FAILURE);
+    }
 
     for(p=listp;p;p=p->ai_next){
         if((lfd=socket(p->ai_family,p->ai_socktype,p->ai_protocol))<0)

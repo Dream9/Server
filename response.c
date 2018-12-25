@@ -1,5 +1,5 @@
 #include"csapp.h"
-
+#include"macro.h"
 //判断是否是空白符
 #define isspace(c) \
     ((c==' '||(c>='\t'&&c<='\r')))
@@ -85,7 +85,7 @@ void response_file(int cfd,const char*path){
 //
 //注意在外层设置detached属性，防止泄漏
 void *response_echo(void*arg){
-    int fd=(int)arg;
+    int cfd=(int)arg;
     char buf[_INT_BUF],path[_INT_BUF>>1],type[_INT_BUF>>5];
     //
     struct stat st;
@@ -96,7 +96,7 @@ void *response_echo(void*arg){
     rio_t rio_buf;
     rio_init(&rio_buf,cfd);
 
-    if(rioreadnb(fd,buf,sizeof buf)<=0){
+    if(rio_readnb(&rio_buf,buf,sizeof buf)<=0){
         //请求错误
         response_501(cfd);
         close(cfd);
@@ -147,7 +147,7 @@ void *response_echo(void*arg){
     }
     //type,path,query都已经构建好了
     if((stat(path,&st)<0)){
-        while(rio_readnb(rio_buf,buf,sizeof buf)>0 &&strcmp("\n",buf))
+        while(rio_readnb(&rio_buf,buf,sizeof buf)>0 && strcmp("\n",buf))
             ;//读取内容知道结束
         response_404(cfd);
         close(cfd);
@@ -171,7 +171,7 @@ void *response_echo(void*arg){
 void response_cgi(int cfd,const char*path,const char*type,
         const char* query){
     char buf[_INT_BUF];
-    int pocgi[2],piccgi[2];
+    int pocgi[2],picgi[2];
     pid_t pid;
     int contlen=-1; //content length
     char c;
@@ -185,12 +185,16 @@ void response_cgi(int cfd,const char*path,const char*type,
      * \r\n
      *"
      */
+    //初始化rio_buf
+    rio_t rio_buf;
+    rio_init(&rio_buf,cfd);
  
     if(strcasecmp(type,"POST")==0){
-        while(rio_readnb(rio_buf,buf,sizeof buf)>0&&
+        while(rio_readnb(&rio_buf,buf,sizeof buf)>0&&
                 strcmp("\n",buf)){
             buf[15]='\0';
-            if(!strcase)
+            if(!strcasecmp(buf,"Content_Length:"))
+                contlen=atoi(buf+16);
         }
         if(contlen==-1){
             response_400(cfd);//请求解析失败
@@ -198,7 +202,7 @@ void response_cgi(int cfd,const char*path,const char*type,
         }
         else{
             //读取content，其实是与cgi执行无关的信息
-            while(rio_readnb(rio_buf,buf,sizeof buf)>0 && strcmp("/n",buf))
+            while(rio_readnb(&rio_buf,buf,sizeof buf)>0 && strcmp("/n",buf))
                 ;
         }
     }
@@ -228,10 +232,10 @@ void response_cgi(int cfd,const char*path,const char*type,
         close(pocgi[0]);
         close(pocgi[1]);
         //环境变量设置
-        spritf(buf,"REQUEST_METHOD=%s",type);
+        sprintf(buf,"REQUEST_METHOD=%s",type);
         putenv(buf);
         if(strcasecmp(buf,"POST")==0)
-            srpintf(buf,"CONTENT_LENGTH=%d",contlen);
+            sprintf(buf,"CONTENT_LENGTH=%d",contlen);
         else
             sprintf(buf,"QUERY_STRING=%s",query);
         putenv(buf);
@@ -244,9 +248,9 @@ void response_cgi(int cfd,const char*path,const char*type,
     close(picgi[0]);
 
     if(strcasecmp(type,"POST")==0){
-        int i;//将数据写入到picgi管道中,让子进程在picgi[0]中读取
-        for(int i=0;i<conlen;++i){
-            rio_readnb(rio_buf,&c,1);
+        //int i;//将数据写入到picgi管道中,让子进程在picgi[0]中读取
+        for(int i=0;i<contlen;++i){
+            rio_readnb(&rio_buf,&c,1);
             rio_writen(picgi[1],&c,1);
         }
     }

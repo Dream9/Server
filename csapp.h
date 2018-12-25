@@ -1,7 +1,7 @@
-#ifndef CSAPP_H
+/*#ifndef CSAPP_H
 #define CSAPP_H
-#endif
 
+*/
 #include<stdlib.h>
 #include<stdio.h>
 //跟踪错误记录
@@ -26,49 +26,11 @@
 #include<pthread.h>
 #include<string.h>
 
-//
-//调试信息设置
-#ifdef _DEBUG
-
-    #ifdef DEBUG_TO_FILE
-        #define DEBUG_FILE "./debugmsg"
-        //调试信息输出到文件
-        #define DEBUG_BUFFER_MAX 4096
-        #define DebugMsg(fmt, ...) {\
-            char buffer[DEBUG_BUFFER_MAX]={0};\
-            snprintf(buffer,DEBUG_BUFFER_MAX,\
-                    "[%s:%d]fmt",__FUNCTION__,__LINE__,##__VA__ARGS__);\
-            FILE* fd=fopen(DEBUG_FILE,"a");\
-            if(fd!=NULL){\
-                fwrite(buffer,strlen(buffer),1,fd);\
-                fflush(fd);\
-                fclose(fd);\
-            }\
-        }
-        
-    #else
-    //调试信息输出到终端
-        #define DebugMsg(fmt, ...) \
-            fprintf(stderr,"[%s:%s:%d]"fmt,__FILE__,__FUNCTION__, \
-                    __LINE__,##__VA_ARGS__);
-    #endif
-#else
-    //错误封装函数
-    #define IF_CODE(return_code) \
-       if(return_code<0){\
-           DebugMsg(return_code);exit(EXIT_FAILURE);\
-       }
-    
-    //发行版本，什么也不做
-    #define DebugMsg(fmt)  
-#endif
-
-//辅助变量与宏
-//
 //char 缓冲区大小
 #define _INT_BUF (1024)
 //listen监听队列大小
 #define _INT_LIS (7)
+
 
 //RIO函数   /*已经废弃*/
 //ssize_t getfdline(size_t fd,char*buf,size_t sz);
@@ -113,6 +75,7 @@ typedef struct{
     char rio_buf[_INT_BUF];
 }rio_t;
 //RIO的读写函数
+extern void rio_init(rio_t* rio_buf,int cfd);
 extern ssize_t rio_readlineb(rio_t *rp,void*usrbuf,size_t maxlen);
 extern ssize_t rio_readnb(rio_t *rp,void*usrbuf,size_t n);
 extern ssize_t rio_writen(int fd,void*usrbuf,size_t n);
@@ -120,3 +83,4 @@ extern ssize_t rio_writen(int fd,void*usrbuf,size_t n);
 //#线程处理例程   弃用
 //void*request_accept(void *arg);
 
+//#endif
