@@ -1,5 +1,6 @@
-#include"clinet.h"
-#include"marco.h"
+#include"client.h"
+#include"rioread.h"
+#include"macro.h"
 #include"openclientfd.h"
 
 /*
@@ -21,8 +22,8 @@ int main(int argc,char*argv[]){
     host=argv[1];
     port=argv[2];
 
-    sfd=openclientfd(host,port);
-    rio_init(&rio,sfd);
+    sfd=open_clientfd(host,port);
+    rio_init(&rio_buf,sfd);
 
     /*生成简单的请求*/
     strcpy(buf,_STR_HEAD_1);

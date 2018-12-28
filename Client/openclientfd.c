@@ -1,5 +1,3 @@
-#include"csapp.h"
-#include"macro.h"
 
 //套接字接口的辅助函数
 //通过函数封装，使得它是可重入的、与协议无关的
@@ -9,9 +7,8 @@
 //
 //#include<sys/types.h>
 //#include<sys/socket.h>
-#include<netdb.h>
 
-#include"open_clientfd.h"
+#include"openclientfd.h"
 
 int open_clientfd(char * hostname,char *port){
     //

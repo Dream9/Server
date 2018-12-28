@@ -3,11 +3,23 @@
 #include<string.h>
 #include<unistd.h>
 
+#include"rioread.h"
+#include"openclientfd.h"
+
 /*定义用于拼接的head*/
-#define STR_HEAD_1 "GET /index.html HTTP/1.0\r\n \
+#define _STR_HEAD_1 "GET /index.html HTTP/1.0\r\n \
     User-Agent:Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0.\r\n \
     Host:127.0.0.1:)"
-#define STR_HEAD_2 "\r\n \
+#define _STR_HEAD_2 "\r\n \
     Connection:close\r\n \
     \r\n"
 
+/*定义常数&以及结构提*/
+#define _BUF_LEN 1024
+
+//typedef struct{
+//    int rio_fd;
+//    int rio_cnt;
+//    char *rio_bufptr;
+//    char rio_buf[_BUF_LEN];
+//} rio_t;
