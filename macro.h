@@ -30,6 +30,8 @@
     #endif
 #else
     //错误封装函数
+    #define _DEBUG_PRINT(content) \
+        printf(content);
     #define IF_CODE(return_code) \
        if(return_code<0){\
            DebugMsg(#return_code);exit(EXIT_FAILURE);\
@@ -45,3 +47,11 @@
 
 #endif
 
+
+/*调试用*/
+#ifdef _DEBUG
+    #define _PRINTF(fmt,...) \
+        printf(fmt,##__VA_ARGS__);
+#else
+    #define _PRINTF(fmt) 
+#endif

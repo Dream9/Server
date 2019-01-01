@@ -8,7 +8,7 @@
 //
 
 inline void response_404(int cfd){
-    const char* res="HTTP/1.0 404 NOT FOUND\r\n"
+    char* res="HTTP/1.0 404 NOT FOUND\r\n"
         "Server:ceshi simple httpd 1.0/r/n"
         "Content-Type:text/html\r\n"
         "\r\n"
@@ -19,7 +19,7 @@ inline void response_404(int cfd){
     rio_writen(cfd,res,strlen(res));
 }
 inline void response_400(int cfd){
-    const char* res="HTTP/1.0 400 BAD REQUEST\r\n"
+    char* res="HTTP/1.0 400 BAD REQUEST\r\n"
         "Server:ceshi simple httpd 1.0/r/n"
         "Content-Type:text/html\r\n"
         "\r\n"
@@ -27,7 +27,7 @@ inline void response_400(int cfd){
     rio_writen(cfd,res,strlen(res));
 }
 inline void response_501(int cfd){
-    const char* res="HTTP/1.0 501 METHOD NOT IMPLEMENTED\r\n"
+    char* res="HTTP/1.0 501 METHOD NOT IMPLEMENTED\r\n"
         "Server:ceshi simple httpd 1.0/r/n"
         "Content-Type:text/html\r\n"
         "\r\n"
@@ -38,7 +38,7 @@ inline void response_501(int cfd){
     rio_writen(cfd,res,strlen(res));
 }
 inline void response_500(int cfd){
-    const char* res="HTTP/1.0 500 INTERNET SEVER ERROR\r\n"
+    char* res="HTTP/1.0 500 INTERNET SEVER ERROR\r\n"
         "Server:ceshi simple httpd 1.0/r/n"
         "Content-Type:text/html\r\n"
         "\r\n"
@@ -49,7 +49,7 @@ inline void response_500(int cfd){
     rio_writen(cfd,res,strlen(res));
 }
 inline void response_200(int cfd){
-    const char* res="HTTP/1.0 200 OK\r\n"
+    char* res="HTTP/1.0 200 OK\r\n"
         "Server:ceshi simple httpd 1.0/r/n"
         "Content-Type:text/html\r\n"
         "\r\n";
@@ -92,11 +92,15 @@ void *response_echo(void*arg){
     char *ptr_t,*ptr_bb,*query,*ptr_b=buf;
     int notcgi;//用于记录请求类型，是否是cgi
 
+    _PRINTF("%d:here",cfd);
     //将文件描述符绑定到rio_t上面
     rio_t rio_buf;
     rio_init(&rio_buf,cfd);
 
-    if(rio_readnb(&rio_buf,buf,sizeof buf)<=0){
+
+    //if(rio_readnb(&rio_buf,buf,sizeof buf)<=0){
+    //上面的错误在于网络数据的大小是不定的：
+    if(rio_readlineb(&rio_buf,buf,sizeof buf)<=0){
         //请求错误
         response_501(cfd);
         close(cfd);
@@ -117,7 +121,12 @@ void *response_echo(void*arg){
             (ptr_t-type)<sizeof type -1;*ptr_t++=*ptr_bb++)
                 ;
     //这里要判断一下到底是get还是post
-    if((notcgi=strcasecmp(type,"POST")) && strcasecmp(type,"POST")){
+    //这里的逻辑是：当是post，notcgi为0（false),
+    //当是get时，notcgi为非零
+    //此时，判断是否带参数?
+    //如果带参数，则将notcgi条为零，并把参数提取出来
+    //利用*query进行分割  \0
+    if((notcgi=strcasecmp(type,"POST")) && strcasecmp(type,"GET")){
         response_501(cfd);
         close(cfd);
         return NULL;
@@ -130,12 +139,13 @@ void *response_echo(void*arg){
     //提取 /index.html 等信息，，并处理成实际地址
     *path='.';////当前目录
     for(ptr_t=path+1;(ptr_t-path)<sizeof path -1&&
-            isspace(*ptr_bb);*ptr_t++=*ptr_bb++)
+            !isspace(*ptr_bb);*ptr_t++=*ptr_bb++)
         ;
     *ptr_t='\0';//拼接完成！！！
+    //此时的*path 应该为./index.html之类的形式
 
     //依据请求的类型分别采用不同的操作
-    //GET?POST：
+    //在是get的情况下，判断是否带参数
     if(notcgi!=0){
         for(query=path;*query &&*query !='?';++query)
             //针对带参数的形式
@@ -147,16 +157,18 @@ void *response_echo(void*arg){
     }
     //type,path,query都已经构建好了
     if((stat(path,&st)<0)){
-        while(rio_readnb(&rio_buf,buf,sizeof buf)>0 && strcmp("\n",buf))
+        while(rio_readlineb(&rio_buf,buf,sizeof buf)>0 && strcmp("\n",buf))
             ;//读取内容知道结束
         response_404(cfd);
         close(cfd);
         return NULL;
     }
+    /*存疑   有执行权限就是cgi吗了？
     //合法情况下，执行，写入，读取权限
     if((st.st_mode&S_IXUSR)||(st.st_mode&S_IXGRP)||
             (st.st_mode&S_IXOTH))
         notcgi=0;//缺少权限
+    */
     if(notcgi)
         response_file(cfd,path);
     else
@@ -190,7 +202,7 @@ void response_cgi(int cfd,const char*path,const char*type,
     rio_init(&rio_buf,cfd);
  
     if(strcasecmp(type,"POST")==0){
-        while(rio_readnb(&rio_buf,buf,sizeof buf)>0&&
+        while(rio_readlineb(&rio_buf,buf,sizeof buf)>0&&
                 strcmp("\n",buf)){
             buf[15]='\0';
             if(!strcasecmp(buf,"Content_Length:"))
@@ -202,7 +214,7 @@ void response_cgi(int cfd,const char*path,const char*type,
         }
         else{
             //读取content，其实是与cgi执行无关的信息
-            while(rio_readnb(&rio_buf,buf,sizeof buf)>0 && strcmp("/n",buf))
+            while(rio_readlineb(&rio_buf,buf,sizeof buf)>0 && strcmp("/n",buf))
                 ;
         }
     }
@@ -215,7 +227,7 @@ void response_cgi(int cfd,const char*path,const char*type,
         return;
     }
     //创建子进程
-    if(pid=fork()<0){
+    if((pid=fork())<0){
         //创建失败
         close(pocgi[0]);
         close(pocgi[1]);

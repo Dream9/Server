@@ -50,7 +50,11 @@ ssize_t rio_readnb(rio_t*rp,void *usrbuf,size_t n){
     char*bufp=usrbuf;
 
     while(nleft>0){
-        if((nread=rio_read(rp,bufp,nleft)<0))
+        //if((nread=rio_read(rp,bufp,nleft)<0))
+        //这里的优先级考虑错了，
+        //改正如下
+        nread=rio_read(rp,bufp,nleft);
+        if(nread<0)
             return -1;   //errno set by read()
         else if(nread==0)
             break;  /*EOF*/
