@@ -1,7 +1,4 @@
 #include"client.h"
-#include"rioread.h"
-#include"macro.h"
-#include"openclientfd.h"
 
 /*
  * 客户端测试
@@ -29,9 +26,12 @@ int main(int argc,char*argv[]){
     strcpy(buf,_STR_HEAD_1);
     strcat(buf,host);
     strcat(buf,_STR_HEAD_2);
+    //
+    printf(buf);
+    //
     rio_writen(sfd,buf,strlen(buf));
     /*获得反馈内容*/
-    while(len=(rio_readnb(&rio_buf,buf,sizeof buf-1))>0){
+    while((len=rio_readlineb(&rio_buf,buf,sizeof buf-1))>0){
         buf[len]='\0';
         printf("%s",buf);
     }

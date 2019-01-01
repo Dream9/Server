@@ -1,6 +1,6 @@
 all:client
 
-COM = -Og -ggdb -Wall
+COM = -O0 -ggdb -Wall -D_DEBUG
 
 CC = gcc
 
